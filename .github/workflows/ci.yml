@@ -29,13 +29,8 @@ jobs:
           cache: npm
           cache-dependency-path: "**/package-lock.json"
 
-      - name: Install backend deps
+      - name: Install dependencies
         run: npm ci
-        working-directory: backend
-
-      - name: Install frontend deps
-        run: npm ci
-        working-directory: frontend
 
       - name: TypeScript check — backend
         run: npx tsc --noEmit
@@ -46,12 +41,12 @@ jobs:
         working-directory: frontend
 
       - name: ESLint — backend
-        run: npx eslint src --ext .ts --max-warnings 0
+        run: npx eslint src --max-warnings 0
         working-directory: backend
         continue-on-error: true
 
       - name: ESLint — frontend
-        run: npx eslint src --ext .ts,.tsx --max-warnings 0
+        run: npx eslint src --max-warnings 0
         working-directory: frontend
         continue-on-error: true
 
@@ -97,9 +92,8 @@ jobs:
           cache: npm
           cache-dependency-path: "**/package-lock.json"
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
-        working-directory: backend
 
       - name: Run DB migrations
         run: psql postgresql://test_user:test_password@localhost:5432/ca_guardian_test -f ../database/schema.sql
@@ -129,9 +123,8 @@ jobs:
           cache: npm
           cache-dependency-path: "**/package-lock.json"
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
-        working-directory: frontend
 
       - name: Run tests
         run: npm test --if-present -- --run --coverage

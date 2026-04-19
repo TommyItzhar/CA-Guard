@@ -4,10 +4,10 @@ if command -v gitleaks &> /dev/null; then
   gitleaks protect --staged --config .gitleaks.toml
 fi
 
-cd backend && npx tsc --noEmit 2>&1 | head -20 &
+(cd backend && npx tsc --noEmit 2>&1 | head -20) &
 TS_BACKEND=$!
 
-cd ../frontend && npx tsc --noEmit 2>&1 | head -20 &
+(cd frontend && npx tsc --noEmit 2>&1 | head -20) &
 TS_FRONTEND=$!
 
 wait $TS_BACKEND

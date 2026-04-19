@@ -1,0 +1,19 @@
+# Normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Force LF for shell scripts and CI files
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.husky/* text eol=lf
+
+# Binary files — no conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
