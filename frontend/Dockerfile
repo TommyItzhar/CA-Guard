@@ -7,7 +7,7 @@ ARG VITE_DEMO_MODE=false
 ENV VITE_DEMO_MODE=$VITE_DEMO_MODE
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
 
