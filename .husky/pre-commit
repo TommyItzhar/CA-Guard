@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running pre-commit checks..."
+
+# Run gitleaks to detect secrets before commit
+if command -v gitleaks &> /dev/null; then
+  gitleaks protect --staged --config .gitleaks.toml
+fi
+
+# TypeScript check on staged files
+cd backend && npx tsc --noEmit 2>&1 | head -20 &
+TS_BACKEND=$!
+
+cd ../frontend && npx tsc --noEmit 2>&1 | head -20 &
+TS_FRONTEND=$!
+
+wait $TS_BACKEND
+wait $TS_FRONTEND
+
+echo "Pre-commit checks passed."

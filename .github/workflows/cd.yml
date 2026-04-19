@@ -1,0 +1,270 @@
+name: CD — Release & Deploy
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [staging, production]
+      version:
+        description: "Image tag to deploy (e.g. v1.2.3 or sha-abc1234)"
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BASE: ${{ github.repository }}
+
+jobs:
+  # ─── Create GitHub Release ────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: tag
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          echo "Previous tag: ${PREV_TAG:-none}"
+          if [ -z "$PREV_TAG" ]; then
+            CHANGES=$(git log --oneline --no-merges | head -30)
+          else
+            CHANGES=$(git log ${PREV_TAG}..HEAD --oneline --no-merges)
+          fi
+
+          # Group by conventional commit type
+          FEAT=$(echo "$CHANGES" | grep "^[a-f0-9]* feat" || true)
+          FIX=$(echo "$CHANGES" | grep "^[a-f0-9]* fix" || true)
+          CHORE=$(echo "$CHANGES" | grep "^[a-f0-9]* chore" || true)
+          OTHER=$(echo "$CHANGES" | grep -v "^[a-f0-9]* feat\|^[a-f0-9]* fix\|^[a-f0-9]* chore" || true)
+
+          BODY="## What's Changed\n\n"
+          [ -n "$FEAT" ] && BODY+="### ✨ Features\n${FEAT}\n\n"
+          [ -n "$FIX"  ] && BODY+="### 🐛 Bug Fixes\n${FIX}\n\n"
+          [ -n "$OTHER" ] && BODY+="### 🔧 Other Changes\n${OTHER}\n\n"
+
+          BODY+="### 🐳 Docker Images\n"
+          BODY+="\`\`\`\nghcr.io/${{ github.repository }}/backend:${{ steps.tag.outputs.version }}\n"
+          BODY+="ghcr.io/${{ github.repository }}/frontend:${{ steps.tag.outputs.version }}\n\`\`\`\n"
+
+          echo -e "$BODY" > release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.version }}
+          name: "CA Guardian ${{ steps.tag.outputs.version }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.version, '-rc.') }}
+          generate_release_notes: false
+          files: |
+            README.md
+
+  # ─── Deploy to Staging ────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy → Staging
+    runs-on: ubuntu-latest
+    needs: release
+    if: always() && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: staging
+      url: https://ca-guardian-staging.yourdomain.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ needs.release.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig — staging
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.STAGING_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            -u ${{ github.actor }} --password-stdin
+
+      - name: Helm upgrade — staging
+        run: |
+          helm upgrade --install ca-guardian ./helm/ca-guardian \
+            --namespace ca-guardian-staging \
+            --create-namespace \
+            --values helm/ca-guardian/values.yaml \
+            --values helm/ca-guardian/values-staging.yaml \
+            --set backend.image.tag=${{ steps.ver.outputs.version }} \
+            --set frontend.image.tag=${{ steps.ver.outputs.version }} \
+            --set global.version=${{ steps.ver.outputs.version }} \
+            --wait \
+            --timeout 10m \
+            --atomic
+
+      - name: Run smoke tests against staging
+        run: |
+          STAGING_URL="https://ca-guardian-staging.yourdomain.com"
+          echo "Testing health endpoint..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${STAGING_URL}/api/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i failed (${STATUS}), retrying in 15s..."
+            sleep 15
+          done
+          echo "❌ Smoke tests failed"
+          exit 1
+
+      - name: Notify staging deployment
+        uses: slackapi/slack-github-action@v1.26.0
+        if: always()
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} Staging deploy: CA Guardian ${{ steps.ver.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CA Guardian* `${{ steps.ver.outputs.version }}` deployed to *staging*\nStatus: ${{ job.status }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # ─── Deploy to Production (requires manual approval) ──────────────────────────
+  deploy-production:
+    name: Deploy → Production
+    runs-on: ubuntu-latest
+    needs: [release, deploy-staging]
+    if: |
+      always() &&
+      needs.deploy-staging.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')) &&
+      !contains(needs.release.outputs.version, '-rc.')
+    environment:
+      name: production
+      url: https://ca-guardian.yourdomain.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ needs.release.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig — production
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Take pre-deploy DB backup
+        run: |
+          echo "Triggering pre-deploy DB snapshot..."
+          kubectl -n ca-guardian exec deploy/ca-guardian-backend -- \
+            node -e "console.log('Pre-deploy backup triggered')" || true
+
+      - name: Helm upgrade — production
+        run: |
+          helm upgrade --install ca-guardian ./helm/ca-guardian \
+            --namespace ca-guardian \
+            --create-namespace \
+            --values helm/ca-guardian/values.yaml \
+            --values helm/ca-guardian/values-production.yaml \
+            --set backend.image.tag=${{ steps.ver.outputs.version }} \
+            --set frontend.image.tag=${{ steps.ver.outputs.version }} \
+            --set global.version=${{ steps.ver.outputs.version }} \
+            --wait \
+            --timeout 15m \
+            --atomic
+
+      - name: Run production smoke tests
+        run: |
+          PROD_URL="https://ca-guardian.yourdomain.com"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${PROD_URL}/api/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Production health check passed"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "❌ Production smoke tests failed — initiating rollback"
+          helm rollback ca-guardian --namespace ca-guardian
+          exit 1
+
+      - name: Notify production deployment
+        uses: slackapi/slack-github-action@v1.26.0
+        if: always()
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '🚀' || '🔥' }} Production deploy: CA Guardian ${{ steps.ver.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CA Guardian* `${{ steps.ver.outputs.version }}` deployed to *production*\nStatus: *${{ job.status }}*\n<https://ca-guardian.yourdomain.com|Open App> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

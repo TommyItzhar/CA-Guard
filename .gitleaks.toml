@@ -1,0 +1,37 @@
+# Gitleaks configuration — prevents secrets from being committed
+# https://github.com/gitleaks/gitleaks
+
+title = "CA Guardian Gitleaks Config"
+
+[extend]
+useDefault = true
+
+# Additional rules specific to this project
+[[rules]]
+id = "azure-client-secret"
+description = "Azure App Registration Client Secret"
+regex = '''(?i)(azure.{0,20}client.{0,20}secret.{0,5}[=:].{0,5})[A-Za-z0-9_~.-]{34,40}'''
+tags = ["azure", "secret"]
+
+[[rules]]
+id = "jwt-secret"
+description = "Hardcoded JWT secret"
+regex = '''(?i)(jwt.{0,10}secret.{0,5}[=:].{0,5})[A-Za-z0-9+/=]{32,}'''
+tags = ["jwt", "secret"]
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+  ".env.example",
+  "README.md",
+  "docs/",
+  ".github/workflows/",
+]
+
+regexes = [
+  "your-very-long-random-secret",
+  "your-app-client-secret",
+  "test-secret-min-64-chars",
+  "xoxb-YOUR-SLACK-BOT-TOKEN",
+  "YOUR-KEYVAULT-NAME",
+]

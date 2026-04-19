@@ -1,0 +1,74 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Daily at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to back up"
+        type: choice
+        options: [staging, production]
+        default: production
+
+jobs:
+  backup:
+    name: PostgreSQL Backup — ${{ inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          SECRET_NAME="${{ inputs.environment == 'staging' && 'STAGING_KUBECONFIG' || 'PRODUCTION_KUBECONFIG' }}"
+          echo "${{ secrets[env.SECRET_NAME] }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+        env:
+          SECRET_NAME: ${{ inputs.environment == 'staging' && 'STAGING_KUBECONFIG' || 'PRODUCTION_KUBECONFIG' }}
+
+      - name: Run pg_dump
+        run: |
+          NAMESPACE="${{ inputs.environment == 'staging' && 'ca-guardian-staging' || 'ca-guardian' }}"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          FILENAME="ca-guardian-backup-${TIMESTAMP}.sql.gz"
+
+          kubectl -n "${NAMESPACE}" exec deploy/ca-guardian-postgres -- \
+            pg_dump -U ca_guardian_user ca_guardian | gzip > "${FILENAME}"
+
+          echo "backup_file=${FILENAME}" >> $GITHUB_ENV
+          echo "Backup created: ${FILENAME} ($(du -sh ${FILENAME} | cut -f1))"
+
+      - name: Upload backup to Azure Blob / S3
+        run: |
+          # Azure Blob Storage example:
+          # az storage blob upload \
+          #   --account-name ${{ secrets.BACKUP_STORAGE_ACCOUNT }} \
+          #   --container-name ca-guardian-backups \
+          #   --name "${{ env.backup_file }}" \
+          #   --file "${{ env.backup_file }}" \
+          #   --auth-mode login
+
+          # AWS S3 example:
+          # aws s3 cp "${{ env.backup_file }}" \
+          #   "s3://${{ secrets.BACKUP_S3_BUCKET }}/ca-guardian/${{ env.backup_file }}"
+
+          echo "⚠️  Configure your cloud storage above. Backup file: ${{ env.backup_file }}"
+
+      - name: Clean up old backups (keep 30 days)
+        run: echo "Implement retention policy for your chosen storage backend"
+
+      - name: Notify on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: '{"text":"❌ CA Guardian DB backup FAILED for ${{ inputs.environment || ''production'' }}"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

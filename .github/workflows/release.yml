@@ -1,0 +1,86 @@
+name: Release — Create Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options: [patch, minor, major, rc]
+      custom_version:
+        description: "Override version (e.g. v2.0.0) — leave blank to auto-bump"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Bump version and tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get latest tag
+        id: latest
+        run: |
+          LATEST=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          echo "tag=${LATEST:-v0.0.0}" >> $GITHUB_OUTPUT
+          echo "Latest stable tag: ${LATEST:-v0.0.0}"
+
+      - name: Compute new version
+        id: next
+        run: |
+          if [ -n "${{ inputs.custom_version }}" ]; then
+            NEW="${{ inputs.custom_version }}"
+          else
+            LATEST="${{ steps.latest.outputs.tag }}"
+            IFS='.' read -r -a PARTS <<< "${LATEST#v}"
+            MAJOR="${PARTS[0]}"
+            MINOR="${PARTS[1]}"
+            PATCH="${PARTS[2]}"
+
+            case "${{ inputs.bump }}" in
+              major) NEW="v$((MAJOR+1)).0.0" ;;
+              minor) NEW="v${MAJOR}.$((MINOR+1)).0" ;;
+              patch) NEW="v${MAJOR}.${MINOR}.$((PATCH+1))" ;;
+              rc)
+                RC_COUNT=$(git tag --sort=-version:refname | grep "^v${MAJOR}.${MINOR}.$((PATCH+1))-rc\." | wc -l | xargs)
+                NEW="v${MAJOR}.${MINOR}.$((PATCH+1))-rc.$((RC_COUNT+1))"
+                ;;
+            esac
+          fi
+          echo "version=${NEW}" >> $GITHUB_OUTPUT
+          echo "New version: ${NEW}"
+
+      - name: Update package.json versions
+        run: |
+          VERSION="${{ steps.next.outputs.version }}"
+          # Strip leading 'v'
+          SEMVER="${VERSION#v}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${SEMVER}\"/" backend/package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"${SEMVER}\"/" frontend/package.json
+          git add backend/package.json frontend/package.json
+          git diff --staged --quiet || git commit -m "chore(release): bump to ${VERSION} [skip ci]"
+
+      - name: Create and push tag
+        run: |
+          git tag -a "${{ steps.next.outputs.version }}" \
+            -m "Release ${{ steps.next.outputs.version }}"
+          git push origin main --follow-tags
+
+      - name: Summary
+        run: |
+          echo "## 🏷️ Release Tagged" >> $GITHUB_STEP_SUMMARY
+          echo "Version: \`${{ steps.next.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "This will trigger the CD pipeline to deploy to staging, then production." >> $GITHUB_STEP_SUMMARY

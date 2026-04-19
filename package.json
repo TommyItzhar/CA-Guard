@@ -1,0 +1,37 @@
+{
+  "name": "ca-guardian",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CA Guardian — Conditional Access Policy Management Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "test": "npm test --prefix backend && npm test --prefix frontend",
+    "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
+    "prepare": "husky install",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "docker:build": "docker compose build",
+    "db:migrate": "psql $DATABASE_URL -f database/schema.sql",
+    "helm:lint": "helm lint helm/ca-guardian -f helm/ca-guardian/values.yaml",
+    "helm:template": "helm template ca-guardian helm/ca-guardian -f helm/ca-guardian/values.yaml -f helm/ca-guardian/values-staging.yaml",
+    "release:patch": "gh workflow run release.yml -f bump=patch",
+    "release:minor": "gh workflow run release.yml -f bump=minor",
+    "release:major": "gh workflow run release.yml -f bump=major"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "concurrently": "^8.2.2",
+    "husky": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}

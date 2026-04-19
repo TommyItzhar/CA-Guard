@@ -1,0 +1,202 @@
+global:
+  version: v2.0.0
+  registry: ghcr.io
+  imagePullPolicy: IfNotPresent
+
+# ─── Backend ──────────────────────────────────────────────────────────────────
+backend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/ca-guardian/backend
+    tag: v2.0.0 # backend-tag
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 3001
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3001
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3001
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3001"
+    prometheus.io/path: "/metrics"
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    fsGroup: 1001
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+
+  nodeSelector: {}
+  tolerations: []
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values: [backend]
+            topologyKey: kubernetes.io/hostname
+
+  env:
+    NODE_ENV: production
+    PORT: "3001"
+    POLL_INTERVAL_MINUTES: "5"
+    RATE_LIMIT_MAX: "200"
+    RATE_LIMIT_WINDOW_MS: "900000"
+
+  # Secret name containing: AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID,
+  #   JWT_SECRET, DB_PASSWORD, SMTP_PASS, SESSION_SECRET
+  existingSecret: ca-guardian-secrets
+
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/ca-guardian/frontend
+    tag: v2.0.0 # frontend-tag
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+
+# ─── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: ca-guardian.yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: ca-guardian-tls
+      hosts:
+        - ca-guardian.yourdomain.com
+
+# ─── PostgreSQL (Bitnami subchart) ────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    database: ca_guardian
+    username: ca_guardian_user
+    existingSecret: ca-guardian-secrets
+    secretKeys:
+      adminPasswordKey: DB_PASSWORD
+      userPasswordKey: DB_PASSWORD
+  primary:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+    initdb:
+      scriptsConfigMap: ca-guardian-db-init
+
+# External DB (set postgresql.enabled: false to use)
+externalDatabase:
+  enabled: false
+  host: ""
+  port: 5432
+  database: ca_guardian
+  username: ca_guardian_user
+  existingSecret: ca-guardian-secrets
+  secretKey: DB_PASSWORD
+
+# ─── Migrations ───────────────────────────────────────────────────────────────
+migrations:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+
+# ─── Network Policy ───────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: false
+
+# ─── Pod Disruption Budget ────────────────────────────────────────────────────
+podDisruptionBudget:
+  backend:
+    enabled: true
+    minAvailable: 1
+  frontend:
+    enabled: true
+    minAvailable: 1
+
+# ─── Service Account ──────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}

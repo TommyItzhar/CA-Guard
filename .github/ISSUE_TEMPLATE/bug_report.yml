@@ -1,0 +1,71 @@
+name: Bug Report
+description: Report a bug in CA Guardian
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the form below.
+
+  - type: input
+    id: version
+    attributes:
+      label: CA Guardian version
+      placeholder: "e.g. v1.2.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Frontend (UI)
+        - Backend (API)
+        - Policy sync (Graph API)
+        - Change request workflow
+        - Email notifications
+        - Rollback
+        - Authentication / MFA
+        - Docker / deployment
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      placeholder: Describe the bug clearly
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste backend logs or screenshots here (redact any secrets)
+      render: shell
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (for frontend issues)
+      placeholder: "e.g. Chrome 122"

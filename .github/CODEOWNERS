@@ -1,0 +1,32 @@
+# CA Guardian — CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+# Order matters: last matching pattern takes precedence.
+
+# Default: all files require ca-guardian-team review
+*                                   @your-org/ca-guardian-team
+
+# Backend — also requires backend team
+/backend/                           @your-org/backend-team
+
+# Frontend — also requires frontend team
+/frontend/                          @your-org/frontend-team
+
+# Infrastructure — requires DevOps
+/.github/                           @your-org/devops
+/helm/                              @your-org/devops
+/k8s/                               @your-org/devops
+/scripts/                           @your-org/devops
+/docker-compose*.yml                @your-org/devops
+
+# Database — requires DBA + DevOps
+/database/                          @your-org/dba @your-org/devops
+
+# Security-critical files — requires security team sign-off
+/.github/workflows/security.yml     @your-org/security @your-org/devops
+/backend/src/middleware/auth.ts     @your-org/security @your-org/backend-team
+/backend/src/middleware/errorHandler.ts @your-org/backend-team
+/backend/src/services/graphService.ts   @your-org/security @your-org/backend-team
+
+# Docs
+/docs/                              @your-org/ca-guardian-team
+/README.md                          @your-org/ca-guardian-team

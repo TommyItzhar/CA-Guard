@@ -1,0 +1,56 @@
+# Staging environment overrides
+backend:
+  replicaCount: 1
+  image:
+    tag: v2.0.0 # backend-tag
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+  env:
+    NODE_ENV: production
+    POLL_INTERVAL_MINUTES: "10"
+    RATE_LIMIT_MAX: "500"
+
+frontend:
+  replicaCount: 1
+  image:
+    tag: v2.0.0 # frontend-tag
+
+ingress:
+  hosts:
+    - host: ca-guardian-staging.yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: ca-guardian-staging-tls
+      hosts:
+        - ca-guardian-staging.yourdomain.com
+
+postgresql:
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    persistence:
+      size: 5Gi
+
+podDisruptionBudget:
+  backend:
+    enabled: false
+  frontend:
+    enabled: false

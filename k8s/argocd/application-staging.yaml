@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ca-guardian-staging
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ca-guardian
+    environment: staging
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: ca-guardian-deploys
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: ca-guardian-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: ca-guardian-alerts
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ca-guardian
+
+  source:
+    repoURL: https://github.com/your-org/ca-guardian.git
+    targetRevision: develop
+    path: helm/ca-guardian
+    helm:
+      releaseName: ca-guardian
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ca-guardian-staging
+
+  syncPolicy:
+    automated:
+      prune: true           # Remove resources no longer in Git
+      selfHeal: true        # Revert manual kubectl changes
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+
+  revisionHistoryLimit: 5
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas   # Managed by HPA
+
+  info:
+    - name: "Environment"
+      value: staging
+    - name: "Docs"
+      value: https://github.com/your-org/ca-guardian/blob/main/README.md

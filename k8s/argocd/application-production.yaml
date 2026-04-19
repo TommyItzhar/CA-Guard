@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ca-guardian-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ca-guardian
+    environment: production
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: ca-guardian-deploys
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: ca-guardian-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: ca-guardian-alerts
+    notifications.argoproj.io/subscribe.on-deployed.slack: ca-guardian-deploys
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ca-guardian
+
+  source:
+    repoURL: https://github.com/your-org/ca-guardian.git
+    targetRevision: main
+    path: helm/ca-guardian
+    helm:
+      releaseName: ca-guardian
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ca-guardian
+
+  syncPolicy:
+    # Production: manual sync only — human must approve in ArgoCD UI or CLI
+    automated: null
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 60s
+        factor: 2
+        maxDuration: 10m
+
+  revisionHistoryLimit: 10
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas   # Managed by HPA
+
+  info:
+    - name: "Environment"
+      value: production
+    - name: "URL"
+      value: https://ca-guardian.yourdomain.com
+    - name: "Docs"
+      value: https://github.com/your-org/ca-guardian/blob/main/README.md
+    - name: "Runbook"
+      value: https://github.com/your-org/ca-guardian/blob/main/docs/runbook.md

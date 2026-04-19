@@ -1,0 +1,43 @@
+version: '3.9'
+
+# ─── Demo mode — no database, no Azure subscription required ─────────────────
+# Usage: docker compose -f docker-compose.demo.yml up --build
+# Then open: http://localhost
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ca-guardian-demo-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DEMO_MODE: "true"
+      PORT: "3001"
+      JWT_SECRET: demo-jwt-secret-not-for-production-use-only
+      FRONTEND_URL: http://localhost
+      API_BASE_URL: http://localhost:3001
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DEMO_MODE: "true"
+    container_name: ca-guardian-demo-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+
+# No postgres service — demo mode uses in-memory data

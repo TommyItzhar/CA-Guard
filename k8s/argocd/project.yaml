@@ -1,0 +1,96 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ca-guardian
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: CA Guardian — Conditional Access Policy Management Platform
+
+  # Only allow syncing from this repo
+  sourceRepos:
+    - https://github.com/your-org/ca-guardian.git
+    - https://charts.bitnami.com/bitnami
+
+  # Allowed destination clusters and namespaces
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: ca-guardian
+    - server: https://kubernetes.default.svc
+      namespace: ca-guardian-staging
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+
+  # Allowed resource kinds (deny-list approach — block dangerous cluster-level resources)
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: "rbac.authorization.k8s.io"
+      kind: ClusterRole
+    - group: "rbac.authorization.k8s.io"
+      kind: ClusterRoleBinding
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota    # Managed by platform team
+    - group: ""
+      kind: LimitRange       # Managed by platform team
+
+  # RBAC roles within this project
+  roles:
+    - name: developer
+      description: Can view and sync staging only
+      policies:
+        - p, proj:ca-guardian:developer, applications, get,    ca-guardian/ca-guardian-staging, allow
+        - p, proj:ca-guardian:developer, applications, sync,   ca-guardian/ca-guardian-staging, allow
+        - p, proj:ca-guardian:developer, applications, action/*, ca-guardian/ca-guardian-staging, allow
+        - p, proj:ca-guardian:developer, logs,         get,    ca-guardian/ca-guardian-staging, allow
+      groups:
+        - your-org:developers
+
+    - name: deployer
+      description: Can sync both environments
+      policies:
+        - p, proj:ca-guardian:deployer, applications, get,    ca-guardian/*, allow
+        - p, proj:ca-guardian:deployer, applications, sync,   ca-guardian/*, allow
+        - p, proj:ca-guardian:deployer, applications, action/*, ca-guardian/*, allow
+      groups:
+        - your-org:devops
+
+    - name: admin
+      description: Full control
+      policies:
+        - p, proj:ca-guardian:admin, applications, *, ca-guardian/*, allow
+        - p, proj:ca-guardian:admin, repositories,  *, ca-guardian/*, allow
+      groups:
+        - your-org:admins
+
+  # Sync windows — prevent accidental prod deploys outside business hours
+  syncWindows:
+    - kind: deny
+      schedule: "0 20 * * 1-5"   # Block Mon-Fri after 20:00
+      duration: 11h
+      applications:
+        - ca-guardian-production
+      timeZone: "UTC"
+      manualSync: true           # Still allow manual emergency syncs
+
+    - kind: deny
+      schedule: "0 0 * * 6,0"   # Block all day Sat-Sun
+      duration: 24h
+      applications:
+        - ca-guardian-production
+      timeZone: "UTC"
+      manualSync: true
+
+  orphanedResources:
+    warn: true
+    ignore:
+      - group: ""
+        kind: ConfigMap
+        name: kube-root-ca.crt

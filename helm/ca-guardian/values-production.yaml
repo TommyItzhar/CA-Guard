@@ -1,0 +1,76 @@
+# Production environment overrides
+backend:
+  replicaCount: 3
+  image:
+    tag: v2.0.0 # backend-tag
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 65
+  resources:
+    requests:
+      cpu: 200m
+      memory: 384Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+  env:
+    NODE_ENV: production
+    POLL_INTERVAL_MINUTES: "5"
+    RATE_LIMIT_MAX: "150"
+
+frontend:
+  replicaCount: 3
+  image:
+    tag: v2.0.0 # frontend-tag
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+  hosts:
+    - host: ca-guardian.yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: ca-guardian-prod-tls
+      hosts:
+        - ca-guardian.yourdomain.com
+
+postgresql:
+  primary:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+    persistence:
+      size: 50Gi
+      storageClass: premium-rwo
+
+networkPolicy:
+  enabled: true
+
+podDisruptionBudget:
+  backend:
+    enabled: true
+    minAvailable: 2
+  frontend:
+    enabled: true
+    minAvailable: 1
