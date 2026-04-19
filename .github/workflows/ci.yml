@@ -27,10 +27,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: TypeScript check — backend
         run: npx tsc --noEmit
@@ -90,10 +90,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run DB migrations
         run: psql postgresql://test_user:test_password@localhost:5432/ca_guardian_test -f ../database/schema.sql
@@ -121,10 +121,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run tests
         run: npm test --if-present -- --run --coverage
