@@ -67,7 +67,7 @@ export default function PoliciesPage() {
         </div>
         <Select
           value={tenantFilter}
-          onChange={e => setSearchParams(p => { e.target.value ? p.set('tenantId', e.target.value) : p.delete('tenantId'); return p; })}
+          onChange={e => setSearchParams(p => { if (e.target.value) { p.set('tenantId', e.target.value); } else { p.delete('tenantId'); } return p; })}
           className="w-52"
         >
           <option value="">All tenants</option>
@@ -75,7 +75,7 @@ export default function PoliciesPage() {
         </Select>
         <Select
           value={lockedFilter}
-          onChange={e => setSearchParams(p => { e.target.value ? p.set('locked', e.target.value) : p.delete('locked'); return p; })}
+          onChange={e => setSearchParams(p => { if (e.target.value) { p.set('locked', e.target.value); } else { p.delete('locked'); } return p; })}
           className="w-44"
         >
           <option value="">All policies</option>

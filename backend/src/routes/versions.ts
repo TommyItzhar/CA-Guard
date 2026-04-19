@@ -97,7 +97,7 @@ router.post(
       await rollbackCAPolicy(
         { tenantId: tenant.tenant_id, clientId: tenant.client_id, clientSecret: tenant.client_secret },
         version.azure_policy_id,
-        version.policy_data as any
+        version.policy_data
       );
 
       // Save rollback version

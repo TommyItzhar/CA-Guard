@@ -5,14 +5,29 @@ import {
   demoChangeRequests, demoAuditLog,
   DEMO_USER_ID, DEMO_ADMIN_ID,
 } from './demoData';
+import type { DemoVersion } from './demoData';
+
+type DemoPolicy = typeof demoPolicies[number] & { active_requests: number };
+type DemoChangeRequest = typeof demoChangeRequests[number] & Record<string, unknown>;
+
+interface DemoNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  reference_id: string;
+  reference_type: string;
+  created_at: string;
+}
 
 const router = Router();
 
 // ─── In-memory state (resets on server restart) ───────────────────────────────
-let policies = JSON.parse(JSON.stringify(demoPolicies));
-let changeRequests = JSON.parse(JSON.stringify(demoChangeRequests));
-let versions = JSON.parse(JSON.stringify(demoVersions));
-let notifications: any[] = [
+const policies: DemoPolicy[] = JSON.parse(JSON.stringify(demoPolicies)) as DemoPolicy[];
+const changeRequests: DemoChangeRequest[] = JSON.parse(JSON.stringify(demoChangeRequests)) as DemoChangeRequest[];
+const versions: Record<string, DemoVersion[]> = JSON.parse(JSON.stringify(demoVersions)) as Record<string, DemoVersion[]>;
+const notifications: DemoNotification[] = [
   { id: 'notif-001', type: 'change_request', title: 'New change request pending', message: 'Jordan Azure requested access to modify "Named Locations — Trusted Countries Only"', is_read: false, reference_id: 'req-001', reference_type: 'change_request', created_at: new Date(Date.now() - 2 * 3600000).toISOString() },
 ];
 
@@ -56,19 +71,19 @@ router.get('/policies', (req: Request, res: Response) => {
 });
 
 router.get('/policies/:id', (req: Request, res: Response) => {
-  const policy = policies.find((p: any) => p.id === req.params.id);
+  const policy = policies.find(p => p.id === req.params.id);
   if (!policy) return res.status(404).json({ error: 'Policy not found' });
   res.json(policy);
 });
 
 router.patch('/policies/:id/lock', (req: Request, res: Response) => {
-  const policy = policies.find((p: any) => p.id === req.params.id);
+  const policy = policies.find(p => p.id === req.params.id);
   if (policy) { policy.is_locked = true; policy.updated_at = new Date().toISOString(); }
   res.json({ message: 'Policy locked (demo)' });
 });
 
 router.patch('/policies/:id/unlock', (req: Request, res: Response) => {
-  const policy = policies.find((p: any) => p.id === req.params.id);
+  const policy = policies.find(p => p.id === req.params.id);
   if (policy) { policy.is_locked = false; policy.updated_at = new Date().toISOString(); }
   res.json({ message: 'Policy unlocked (demo)' });
 });
@@ -82,20 +97,20 @@ router.get('/policies/:id/diff', (req: Request, res: Response) => {
 router.get('/change-requests', (req: Request, res: Response) => {
   let result = [...changeRequests];
   const { status, policyId } = req.query as Record<string, string>;
-  if (status) result = result.filter((r: any) => r.status === status);
-  if (policyId) result = result.filter((r: any) => r.policy_id === policyId);
+  if (status) result = result.filter(r => r.status === status);
+  if (policyId) result = result.filter(r => r.policy_id === policyId);
   res.json(result);
 });
 
 router.get('/change-requests/:id', (req: Request, res: Response) => {
-  const cr = changeRequests.find((r: any) => r.id === req.params.id);
+  const cr = changeRequests.find(r => r.id === req.params.id);
   if (!cr) return res.status(404).json({ error: 'Not found' });
   res.json(cr);
 });
 
 router.post('/change-requests', (req: Request, res: Response) => {
   const { policyId, justification, plannedChanges } = req.body;
-  const policy = policies.find((p: any) => p.id === policyId);
+  const policy = policies.find(p => p.id === policyId);
   if (!policy) return res.status(404).json({ error: 'Policy not found' });
 
   const newReq = {
@@ -126,9 +141,9 @@ router.post('/change-requests', (req: Request, res: Response) => {
 });
 
 router.post('/change-requests/:id/approve', (req: Request, res: Response) => {
-  const cr = changeRequests.find((r: any) => r.id === req.params.id);
+  const cr = changeRequests.find(r => r.id === req.params.id);
   if (!cr || cr.status !== 'pending') return res.status(404).json({ error: 'Pending request not found' });
-  const policy = policies.find((p: any) => p.id === cr.policy_id);
+  const policy = policies.find(p => p.id === cr.policy_id);
 
   cr.status = 'approved';
   cr.approver_id = DEMO_ADMIN_ID;
@@ -146,7 +161,7 @@ router.post('/change-requests/:id/approve', (req: Request, res: Response) => {
 });
 
 router.post('/change-requests/:id/reject', (req: Request, res: Response) => {
-  const cr = changeRequests.find((r: any) => r.id === req.params.id);
+  const cr = changeRequests.find(r => r.id === req.params.id);
   if (!cr || cr.status !== 'pending') return res.status(404).json({ error: 'Pending request not found' });
   cr.status = 'rejected';
   cr.approver_id = DEMO_ADMIN_ID;
@@ -155,25 +170,25 @@ router.post('/change-requests/:id/reject', (req: Request, res: Response) => {
   cr.approval_note = req.body.note;
   cr.approved_at = new Date().toISOString();
   cr.updated_at = new Date().toISOString();
-  const policy = policies.find((p: any) => p.id === cr.policy_id);
+  const policy = policies.find(p => p.id === cr.policy_id);
   if (policy) policy.active_requests = Math.max(0, (policy.active_requests || 1) - 1);
   res.json({ message: 'Request rejected (demo)' });
 });
 
 router.post('/change-requests/:id/complete', (req: Request, res: Response) => {
-  const cr = changeRequests.find((r: any) => r.id === req.params.id);
+  const cr = changeRequests.find(r => r.id === req.params.id);
   if (!cr) return res.status(404).json({ error: 'Not found' });
   cr.status = 'completed';
   cr.completed_at = new Date().toISOString();
   cr.post_version_number = (cr.pre_version_number || 1) + 1;
   cr.updated_at = new Date().toISOString();
-  const policy = policies.find((p: any) => p.id === cr.policy_id);
+  const policy = policies.find(p => p.id === cr.policy_id);
   if (policy) { policy.is_locked = true; policy.active_requests = Math.max(0, (policy.active_requests || 1) - 1); }
   res.json({ message: 'Change completed and policy re-locked (demo)' });
 });
 
 router.post('/change-requests/:id/cancel', (req: Request, res: Response) => {
-  const cr = changeRequests.find((r: any) => r.id === req.params.id);
+  const cr = changeRequests.find(r => r.id === req.params.id);
   if (!cr) return res.status(404).json({ error: 'Not found' });
   cr.status = 'cancelled';
   cr.updated_at = new Date().toISOString();
@@ -187,23 +202,23 @@ router.get('/versions', (req: Request, res: Response) => {
 });
 
 router.get('/versions/:id', (req: Request, res: Response) => {
-  for (const vList of Object.values(versions) as any[][]) {
-    const v = vList.find((v: any) => v.id === req.params.id);
+  for (const vList of Object.values(versions)) {
+    const v = vList.find(v => v.id === req.params.id);
     if (v) return res.json(v);
   }
   res.status(404).json({ error: 'Version not found' });
 });
 
 router.post('/versions/:id/rollback', (req: Request, res: Response) => {
-  let targetVersion: any = null;
-  let targetPolicyId: string = '';
-  for (const [pId, vList] of Object.entries(versions) as [string, any[]][]) {
-    const v = (vList as any[]).find((v: any) => v.id === req.params.id);
+  let targetVersion: DemoVersion | null = null;
+  let targetPolicyId = '';
+  for (const [pId, vList] of Object.entries(versions)) {
+    const v = vList.find(v => v.id === req.params.id);
     if (v) { targetVersion = v; targetPolicyId = pId; break; }
   }
   if (!targetVersion) return res.status(404).json({ error: 'Version not found' });
 
-  const policy = policies.find((p: any) => p.id === targetPolicyId);
+  const policy = policies.find(p => p.id === targetPolicyId);
   if (policy) {
     policy.is_locked = true;
     policy.policy_data = targetVersion.policy_data;

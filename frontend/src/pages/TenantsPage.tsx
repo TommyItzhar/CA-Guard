@@ -23,8 +23,8 @@ export default function TenantsPage() {
       const res = await tenantsApi.sync(id);
       toast({ title: `Sync complete: ${res.created} created, ${res.updated} updated`, variant: 'success' });
       load();
-    } catch (e: any) {
-      toast({ title: 'Sync failed', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Sync failed', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSyncing(null); }
   }
 
@@ -36,8 +36,8 @@ export default function TenantsPage() {
       setShowAddModal(false);
       setForm({ tenantId: '', displayName: '', clientId: '', clientSecret: '' });
       load();
-    } catch (e: any) {
-      toast({ title: 'Failed to add tenant', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to add tenant', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSubmitting(false); }
   }
 

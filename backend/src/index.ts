@@ -20,6 +20,7 @@ import versionRoutes from './routes/versions';
 import auditRoutes from './routes/audit';
 import userRoutes from './routes/users';
 import notificationRoutes from './routes/notifications';
+import demoRoutes from './demo/demoRoutes';
 
 import { startPollingJob } from './jobs/policyPoller';
 import { startLockExpiryJob } from './jobs/lockExpiry';
@@ -41,8 +42,6 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date()
 
 if (DEMO_MODE) {
   logger.info('DEMO MODE ENABLED - no Azure subscription or database required');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const demoRoutes = require('./demo/demoRoutes').default;
   app.use('/api', demoRoutes);
 } else {
   app.use('/api/auth', authRoutes);

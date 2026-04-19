@@ -27,7 +27,7 @@ auditRouter.get('/export', asyncHandler(async (req: Request, res: Response) => {
     const headers = ['id', 'created_at', 'user_name', 'action', 'resource_type', 'resource_name', 'ip_address'];
     const csv = [
       headers.join(','),
-      ...result.rows.map((row: any) =>
+      ...(result.rows as Record<string, unknown>[]).map(row =>
         headers.map(h => {
           const val = String(row[h] ?? '');
           return `"${val.replace(/"/g, '""')}"`;
@@ -94,7 +94,7 @@ notificationsRouter.get('/', asyncHandler(async (req: Request, res: Response) =>
      ORDER BY created_at DESC LIMIT 50`,
     [req.user!.id]
   );
-  const unreadCount = rows.filter((r: any) => !r.is_read).length;
+  const unreadCount = (rows as Array<{ is_read: boolean }>).filter(r => !r.is_read).length;
   res.json({ notifications: rows, unreadCount });
 }));
 

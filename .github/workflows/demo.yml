@@ -13,6 +13,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  HUSKY: 0
+
 concurrency:
   group: demo-deploy
   cancel-in-progress: true

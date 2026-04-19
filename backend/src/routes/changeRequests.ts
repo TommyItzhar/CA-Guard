@@ -7,10 +7,8 @@ import { createPolicyVersion } from '../services/backupService';
 import {
   sendChangeRequestNotification,
   sendApprovalNotification,
-  sendChangeDetectedNotification,
 } from '../services/emailService';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { logger } from '../utils/logger';
 
 const router = Router();
 router.use(authenticate);

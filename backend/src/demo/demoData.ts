@@ -1,8 +1,6 @@
 // Demo mode seed data — realistic Conditional Access policies for UI demonstration
 // No Azure subscription or App Registration required
 
-import { v4 as uuidv4 } from 'uuid';
-
 export const DEMO_TENANT_ID = 'demo-tenant-00000000-0000-0000-0000-000000000000';
 export const DEMO_USER_ID   = 'demo-user-00000000-0000-0000-0000-000000000000';
 export const DEMO_ADMIN_ID  = 'demo-admin-00000000-0000-0000-0000-000000000000';
@@ -61,7 +59,28 @@ export const demoUsers = [
   },
 ];
 
-const makePolicy = (id: string, name: string, state: string, locked: boolean, conditions: object, grantControls: object | null) => ({
+export interface DemoVersion {
+  id: string;
+  policy_id: string;
+  version_number: number;
+  change_type: string;
+  change_summary: string;
+  created_at: string;
+  created_by_name: string;
+  request_id: null;
+  policy_data: {
+    id: string;
+    displayName: string;
+    state: string;
+    createdDateTime: string;
+    modifiedDateTime: string;
+    conditions: Record<string, unknown>;
+    grantControls: Record<string, unknown> | null;
+    sessionControls: null;
+  };
+}
+
+const makePolicy = (id: string, name: string, state: string, locked: boolean, conditions: Record<string, unknown>, grantControls: Record<string, unknown> | null) => ({
   id,
   azure_policy_id: `azure-${id}`,
   display_name: name,
@@ -129,7 +148,7 @@ export const demoPolicies = [
   ),
 ];
 
-export const demoVersions: Record<string, any[]> = {};
+export const demoVersions: Record<string, DemoVersion[]> = {};
 demoPolicies.forEach(p => {
   const count = p.version_count;
   demoVersions[p.id] = Array.from({ length: count }, (_, i) => ({

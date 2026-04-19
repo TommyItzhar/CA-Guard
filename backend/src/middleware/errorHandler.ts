@@ -13,7 +13,7 @@ export class AppError extends Error {
 }
 
 export function errorHandler(
-  err: Error,
+  err: unknown,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -25,9 +25,10 @@ export function errorHandler(
     });
   }
 
+  const error = err instanceof Error ? err : new Error(String(err));
   logger.error('Unhandled error', {
-    message: err.message,
-    stack: err.stack,
+    message: error.message,
+    stack: error.stack,
     url: req.url,
     method: req.method,
   });
@@ -35,7 +36,7 @@ export function errorHandler(
   res.status(500).json({
     error: process.env.NODE_ENV === 'production'
       ? 'An internal server error occurred'
-      : err.message,
+      : error.message,
   });
 }
 

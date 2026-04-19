@@ -71,7 +71,7 @@ async function checkPolicyForChanges(row: {
     row.azure_policy_id
   );
 
-  const currentModified = (row.current_policy_data as any).modifiedDateTime;
+  const currentModified = (row.current_policy_data as { modifiedDateTime?: string }).modifiedDateTime;
   const liveModified = livePolicy.modifiedDateTime;
 
   if (liveModified && currentModified !== liveModified) {

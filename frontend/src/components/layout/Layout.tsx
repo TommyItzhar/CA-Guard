@@ -81,7 +81,7 @@ export default function Layout() {
             key={to}
             to={to}
             onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
+            className={({ isActive }: { isActive: boolean }) =>
               cn(
                 'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
                 isActive

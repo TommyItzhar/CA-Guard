@@ -22,7 +22,7 @@ export default function UsersPage() {
       await usersApi.setRole(userId, role);
       toast({ title: 'Role updated', variant: 'success' });
       load();
-    } catch (e: any) { toast({ title: 'Failed to update role', description: e.message, variant: 'error' }); }
+    } catch (e: unknown) { toast({ title: 'Failed to update role', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' }); }
   }
 
   async function handleToggleStatus(user: User) {
@@ -30,7 +30,7 @@ export default function UsersPage() {
       await usersApi.setStatus(user.id, !user.is_active);
       toast({ title: `User ${user.is_active ? 'deactivated' : 'activated'}`, variant: 'success' });
       load();
-    } catch (e: any) { toast({ title: 'Failed', description: e.message, variant: 'error' }); }
+    } catch (e: unknown) { toast({ title: 'Failed', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' }); }
   }
 
   return (

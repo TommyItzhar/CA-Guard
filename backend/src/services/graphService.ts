@@ -81,8 +81,7 @@ export async function updateCAPolicy(
   const token = await getAccessToken(creds);
   const client = getGraphClient(token);
   // Remove read-only fields before patching
-  const { id, createdDateTime, modifiedDateTime, ...patchData } = policyData as ConditionalAccessPolicy;
-  void id; void createdDateTime; void modifiedDateTime;
+  const { id: _id, createdDateTime: _created, modifiedDateTime: _modified, ...patchData } = policyData as ConditionalAccessPolicy;
   await client
     .api(`/identity/conditionalAccess/policies/${policyId}`)
     .patch(patchData);
@@ -92,9 +91,9 @@ export async function updateCAPolicy(
 export async function rollbackCAPolicy(
   creds: TenantCredentials,
   policyId: string,
-  versionData: ConditionalAccessPolicy
+  versionData: Record<string, unknown>
 ): Promise<void> {
-  await updateCAPolicy(creds, policyId, versionData);
+  await updateCAPolicy(creds, policyId, versionData as Partial<ConditionalAccessPolicy>);
   logger.info(`Rolled back CA policy ${policyId}`);
 }
 

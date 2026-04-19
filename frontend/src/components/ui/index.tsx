@@ -233,6 +233,8 @@ ToastViewport.displayName = 'ToastViewport';
 
 interface ToastProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> {
   variant?: 'default' | 'success' | 'error';
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export const Toast = React.forwardRef<React.ElementRef<typeof ToastPrimitive.Root>, ToastProps>(

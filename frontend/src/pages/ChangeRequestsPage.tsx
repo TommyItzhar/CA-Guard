@@ -50,7 +50,7 @@ export default function ChangeRequestsPage() {
         </div>
         <Select
           value={statusFilter}
-          onChange={e => setSearchParams(p => { e.target.value ? p.set('status', e.target.value) : p.delete('status'); return p; })}
+          onChange={e => setSearchParams(p => { if (e.target.value) { p.set('status', e.target.value); } else { p.delete('status'); } return p; })}
           className="w-52"
         >
           <option value="">All statuses</option>

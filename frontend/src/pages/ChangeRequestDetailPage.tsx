@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, CheckCircle2, XCircle, Clock, Shield,
@@ -39,16 +39,16 @@ export default function ChangeRequestDetailPage() {
   const canAdmin = user?.role === 'super_admin' || user?.role === 'ca_admin';
   const isRequester = request?.requester_id === user?.id;
 
-  function load() {
+  const load = useCallback(() => {
     if (!id) return;
     setLoading(true);
     changeRequestsApi.get(id)
       .then(setRequest)
       .catch(() => navigate('/change-requests'))
       .finally(() => setLoading(false));
-  }
+  }, [id, navigate]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleApprove() {
     if (!id) return;
@@ -58,8 +58,8 @@ export default function ChangeRequestDetailPage() {
       toast({ title: 'Request approved', description: 'Policy has been unlocked for 2 hours.', variant: 'success' });
       setShowApproveModal(false);
       load();
-    } catch (e: any) {
-      toast({ title: 'Failed to approve', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to approve', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSubmitting(false); }
   }
 
@@ -71,8 +71,8 @@ export default function ChangeRequestDetailPage() {
       toast({ title: 'Request rejected', variant: 'success' });
       setShowRejectModal(false);
       load();
-    } catch (e: any) {
-      toast({ title: 'Failed to reject', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to reject', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSubmitting(false); }
   }
 
@@ -83,8 +83,8 @@ export default function ChangeRequestDetailPage() {
       await changeRequestsApi.complete(id);
       toast({ title: 'Request completed', description: 'Policy has been re-locked.', variant: 'success' });
       load();
-    } catch (e: any) {
-      toast({ title: 'Failed to complete', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to complete', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSubmitting(false); }
   }
 
@@ -95,8 +95,8 @@ export default function ChangeRequestDetailPage() {
       await changeRequestsApi.cancel(id);
       toast({ title: 'Request cancelled', variant: 'success' });
       navigate('/change-requests');
-    } catch (e: any) {
-      toast({ title: 'Failed to cancel', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to cancel', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally { setSubmitting(false); }
   }
 

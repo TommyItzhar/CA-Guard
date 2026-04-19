@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Lock, Unlock, GitPullRequest, History, ChevronLeft,
@@ -42,7 +42,7 @@ export default function PolicyDetailPage() {
   const canAdmin = user?.role === 'super_admin' || user?.role === 'ca_admin';
   const canRequest = ['super_admin', 'ca_admin', 'azure_admin'].includes(user?.role || '');
 
-  function loadData() {
+  const loadData = useCallback(() => {
     if (!id) return;
     setLoading(true);
     Promise.all([
@@ -54,9 +54,9 @@ export default function PolicyDetailPage() {
       setVersions(v);
       setActiveRequests(r.filter(req => !['completed','rejected','cancelled'].includes(req.status)));
     }).finally(() => setLoading(false));
-  }
+  }, [id]);
 
-  useEffect(() => { loadData(); }, [id]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   async function handleSubmitRequest() {
     if (!id || !justification.trim()) return;
@@ -68,8 +68,8 @@ export default function PolicyDetailPage() {
       setJustification('');
       setPlannedChanges('');
       navigate(`/change-requests/${res.id}`);
-    } catch (e: any) {
-      toast({ title: 'Failed to submit request', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Failed to submit request', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -82,8 +82,8 @@ export default function PolicyDetailPage() {
       toast({ title: `Rolled back to v${version.version_number}`, variant: 'success' });
       setShowRollbackModal(null);
       loadData();
-    } catch (e: any) {
-      toast({ title: 'Rollback failed', description: e.message, variant: 'error' });
+    } catch (e: unknown) {
+      toast({ title: 'Rollback failed', description: e instanceof Error ? e.message : 'Unknown error', variant: 'error' });
     } finally {
       setSubmitting(false);
     }

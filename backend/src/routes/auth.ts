@@ -85,10 +85,11 @@ router.get('/callback', async (req: Request, res: Response) => {
       return res.redirect(`${frontendUrl}/login?error=Account+deactivated`);
     }
 
+    const expiresIn = (process.env.JWT_EXPIRES_IN || '8h') as jwt.SignOptions['expiresIn'];
     const token = jwt.sign(
       { id: user.id, azure_oid: oid, display_name: user.display_name, email, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as any }
+      { expiresIn }
     );
 
     await audit({
