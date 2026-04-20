@@ -6,11 +6,11 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  description: CA Guardian — Conditional Access Policy Management Platform
+  description: Stone Guard — Conditional Access Policy Management Platform
 
   # Only allow syncing from this repo
   sourceRepos:
-    - https://github.com/your-org/ca-guardian.git
+    - https://github.com/TommyItzhar/CA-Guard.git
     - https://charts.bitnami.com/bitnami
 
   # Allowed destination clusters and namespaces

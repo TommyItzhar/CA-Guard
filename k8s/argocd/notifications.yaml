@@ -32,7 +32,7 @@ data:
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": "✅ *CA Guardian sync succeeded*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Revision:* `{{.app.status.sync.revision | substr 0 7}}`"
+                "text": "✅ *Stone Guard sync succeeded*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Revision:* `{{.app.status.sync.revision | substr 0 7}}`"
               }
             },
             {
@@ -58,7 +58,7 @@ data:
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": "❌ *CA Guardian sync FAILED*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Error:* {{.app.status.operationState.message}}"
+                "text": "❌ *Stone Guard sync FAILED*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Error:* {{.app.status.operationState.message}}"
               }
             },
             {
@@ -85,7 +85,7 @@ data:
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": "⚠️ *CA Guardian health degraded*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Status:* {{.app.status.health.status}}\n*Message:* {{.app.status.health.message}}"
+                "text": "⚠️ *Stone Guard health degraded*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Status:* {{.app.status.health.status}}\n*Message:* {{.app.status.health.message}}"
               }
             }
           ]
@@ -101,7 +101,7 @@ data:
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": "🚀 *CA Guardian deployed and healthy*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Version:* `{{.app.status.sync.revision | substr 0 7}}`"
+                "text": "🚀 *Stone Guard deployed and healthy*\n*App:* {{.app.metadata.name}}\n*Environment:* {{.app.metadata.labels.environment}}\n*Version:* `{{.app.status.sync.revision | substr 0 7}}`"
               }
             }
           ]

@@ -17,7 +17,7 @@ spec:
   project: ca-guardian
 
   source:
-    repoURL: https://github.com/your-org/ca-guardian.git
+    repoURL: https://github.com/TommyItzhar/CA-Guard.git
     targetRevision: main
     path: helm/ca-guardian
     helm:
@@ -60,6 +60,6 @@ spec:
     - name: "URL"
       value: https://ca-guardian.yourdomain.com
     - name: "Docs"
-      value: https://github.com/your-org/ca-guardian/blob/main/README.md
+      value: https://github.com/TommyItzhar/CA-Guard/blob/main/README.md
     - name: "Runbook"
-      value: https://github.com/your-org/ca-guardian/blob/main/docs/runbook.md
+      value: https://github.com/TommyItzhar/CA-Guard/blob/main/docs/runbook.md

@@ -16,7 +16,7 @@ spec:
   project: ca-guardian
 
   source:
-    repoURL: https://github.com/your-org/ca-guardian.git
+    repoURL: https://github.com/TommyItzhar/CA-Guard.git
     targetRevision: develop
     path: helm/ca-guardian
     helm:
@@ -58,4 +58,4 @@ spec:
     - name: "Environment"
       value: staging
     - name: "Docs"
-      value: https://github.com/your-org/ca-guardian/blob/main/README.md
+      value: https://github.com/TommyItzhar/CA-Guard/blob/main/README.md
