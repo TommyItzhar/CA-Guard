@@ -32,11 +32,10 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: "**/package.json"
 
       - name: Install deps
         run: rm -f package-lock.json && npm install
-        working-directory: frontend
 
       - name: Build demo frontend
         run: npm run build
