@@ -15,6 +15,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_BASE: ${{ github.repository }}
   HUSKY: 0
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─── Code quality ─────────────────────────────────────────────────────────────

@@ -12,6 +12,9 @@ on:
         description: "Override version (e.g. v2.0.0) — leave blank to auto-bump"
         required: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
 

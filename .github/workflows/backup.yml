@@ -12,6 +12,9 @@ on:
         options: [staging, production]
         default: production
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   backup:
     name: PostgreSQL Backup — ${{ inputs.environment || 'production' }}
