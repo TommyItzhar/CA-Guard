@@ -2,7 +2,7 @@
 backend:
   replicaCount: 3
   image:
-    tag: v2.0.0 # backend-tag
+    tag: sha-abe427a # backend-tag
   autoscaling:
     enabled: true
     minReplicas: 3
@@ -23,7 +23,7 @@ backend:
 frontend:
   replicaCount: 3
   image:
-    tag: v2.0.0 # frontend-tag
+    tag: sha-abe427a # frontend-tag
   autoscaling:
     enabled: true
     minReplicas: 2
