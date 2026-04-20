@@ -8,7 +8,7 @@
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "test": "npm test --prefix backend && npm test --prefix frontend",
     "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
-    "prepare": "husky",
+    "prepare": "node --eval \"if (!process.env.CI) require('child_process').execSync('husky', {stdio: 'inherit'})\"",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
