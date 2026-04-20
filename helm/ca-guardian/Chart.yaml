@@ -1,12 +1,12 @@
 apiVersion: v2
 name: ca-guardian
-description: CA Guardian — Conditional Access Policy Management Platform
+description: Stone Guard — Conditional Access Policy Management Platform
 type: application
-version: 1.0.0
-appVersion: "1.0.0"
-home: https://github.com/your-org/ca-guardian
+version: 2.0.0
+appVersion: "2.0.0"
+home: https://github.com/TommyItzhar/CA-Guard
 sources:
-  - https://github.com/your-org/ca-guardian
+  - https://github.com/TommyItzhar/CA-Guard
 keywords:
   - azure
   - conditional-access
@@ -14,10 +14,10 @@ keywords:
   - entra-id
   - governance
 maintainers:
-  - name: CA Guardian Team
-    email: ca-guardian@yourdomain.com
+  - name: Stone Guard Team
+    email: stoneguard@yourdomain.com
 dependencies:
   - name: postgresql
-    version: "13.x.x"
+    version: "16.x.x"
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled

@@ -1,5 +1,3 @@
-version: '3.9'
-
 # ─── Demo mode — no database, no Azure subscription required ─────────────────
 # Usage: docker compose -f docker-compose.demo.yml up --build
 # Then open: http://localhost
