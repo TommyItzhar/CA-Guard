@@ -153,7 +153,7 @@ jobs:
           exit 1
 
       - name: Notify staging deployment
-        uses: slackapi/slack-github-action@v2
+        uses: slackapi/slack-github-action@v3
         if: always()
         with:
           payload: |
@@ -249,7 +249,7 @@ jobs:
           exit 1
 
       - name: Notify production deployment
-        uses: slackapi/slack-github-action@v2
+        uses: slackapi/slack-github-action@v3
         if: always()
         with:
           payload: |
