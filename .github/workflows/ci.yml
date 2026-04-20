@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: rm -f package-lock.json && npm install
+        run: npm install
 
       - name: TypeScript check — backend
         run: npx tsc --noEmit
@@ -95,7 +95,7 @@ jobs:
           cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: rm -f package-lock.json && npm install
+        run: npm install
 
       - name: Run DB migrations
         run: psql postgresql://test_user:test_password@localhost:5432/ca_guardian_test -f ../database/schema.sql
@@ -126,7 +126,7 @@ jobs:
           cache-dependency-path: "**/package.json"
 
       - name: Install dependencies
-        run: rm -f package-lock.json && npm install
+        run: npm install
 
       - name: Run tests
         run: npm test --if-present -- --run --coverage

@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: "**/package.json"
 
       - name: Install deps
-        run: rm -f package-lock.json && npm install
+        run: npm install
 
       - name: Build demo frontend
         run: npm run build
