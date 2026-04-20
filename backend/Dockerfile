@@ -1,4 +1,4 @@
-FROM node:22-alpine3.21 AS builder
+FROM node:25-alpine3.21 AS builder
 RUN apk upgrade --no-cache
 WORKDIR /app
 COPY package*.json ./
@@ -7,7 +7,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:22-alpine3.21 AS runner
+FROM node:25-alpine3.21 AS runner
 RUN apk add --no-cache dumb-init
 WORKDIR /app
 ENV NODE_ENV=production
