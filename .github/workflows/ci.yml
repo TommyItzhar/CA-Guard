@@ -281,7 +281,7 @@ jobs:
       - name: Trivy scan — backend image
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/backend:${{ steps.version.outputs.version }}
+          image-ref: "${{ fromJSON(steps.meta-backend.outputs.json).tags[0] }}"
           format: sarif
           output: trivy-backend.sarif
           exit-code: "0"
