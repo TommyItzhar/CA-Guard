@@ -46,7 +46,7 @@ jobs:
           VITE_API_URL: ${{ vars.DEMO_BACKEND_URL || 'http://localhost:3001' }}
 
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/dist
 
@@ -60,7 +60,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # Optional: deploy demo backend to a lightweight host (Railway, Render, Fly.io)
   deploy-demo-backend:
