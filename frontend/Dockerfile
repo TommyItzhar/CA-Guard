@@ -1,4 +1,4 @@
-FROM node:22-alpine3.21 AS builder
+FROM node:25-alpine3.21 AS builder
 RUN apk upgrade --no-cache
 WORKDIR /app
 
