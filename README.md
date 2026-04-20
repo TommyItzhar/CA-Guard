@@ -1,7 +1,7 @@
 # CA Guardian
 ### Enterprise Conditional Access Policy Management Platform
 
-CA Guardian is a production-ready web application that provides centralized governance, lifecycle management, and change-control enforcement for Microsoft Azure Entra ID Conditional Access (CA) policies across one or more tenants.
+CA Guardian is a production-ready web application created by Tommy - Keystone that provides centralized governance, lifecycle management, and change-control enforcement for Microsoft Azure Entra ID Conditional Access (CA) policies across one or more tenants.
 
 ---
 
